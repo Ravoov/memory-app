@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NeuroCheck — Memory & Sleep Assessment</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#060612;
+  --surface:#0d0d1f;
+  --surface2:#13132a;
+  --border:#1e1e3f;
+  --accent:#00f5d4;
+  --accent2:#f500b8;
+  --accent3:#ffe600;
+  --text:#eeeeff;
+  --muted:#5555aa;
+  --danger:#ff3366;
+  --success:#00f5d4;
+}
+
+body{
+  font-family:'Outfit',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* STAR BACKGROUND */
+.stars{position:fixed;inset:0;z-index:0;overflow:hidden;}
+.stars::before,.stars::after{
+  content:'';position:absolute;inset:0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 70%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 50% 10%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 50%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 30%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 20% 90%, rgba(255,255,255,0.2) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 60% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 40% 40%, rgba(255,255,255,0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 15%, rgba(255,255,255,0.3) 0%, transparent 100%);
+  background-size:400px 400px;
+}
+.stars::after{background-size:600px 600px;opacity:0.5;}
+
+/* GLOW BLOBS */
+.blob{
+  position:fixed;border-radius:50%;filter:blur(80px);
+  pointer-events:none;z-index:0;
+}
+.blob1{width:500px;height:500px;background:rgba(0,245,212,0.07);top:-100px;left:-100px;}
+.blob2{width:400px;height:400px;background:rgba(245,0,184,0.07);bottom:-100px;right:-100px;}
+
+/* SCREEN SYSTEM */
+.screen{
+  position:relative;z-index:1;
+  min-height:100vh;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:40px 20px;
+}
+.screen.active{display:flex;}
+
+/* ── WELCOME ── */
+#screen-welcome .logo{
+  font-size:13px;letter-spacing:0.3em;
+  color:var(--accent);text-transform:uppercase;
+  margin-bottom:32px;
+  display:flex;align-items:center;gap:10px;
+}
+.logo-bar{width:30px;height:2px;background:var(--accent);}
+
+#screen-welcome h1{
+  font-size:clamp(48px,8vw,88px);
+  font-weight:900;
+  line-height:0.95;
+  text-align:center;
+  margin-bottom:16px;
+}
+h1 .highlight{
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+
+.subtitle{
+  font-size:16px;color:var(--muted);font-weight:300;
+  text-align:center;max-width:420px;line-height:1.7;
+  margin-bottom:48px;
+}
+
+.username-box{
+  width:100%;max-width:420px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:28px;
+}
+.username-box label{
+  display:block;
+  font-size:11px;letter-spacing:0.15em;
+  color:var(--muted);text-transform:uppercase;
+  margin-bottom:10px;
+}
+.username-box input{
+  width:100%;
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px 16px;
+  font-family:'Outfit',sans-serif;
+  font-size:18px;font-weight:600;
+  color:var(--text);outline:none;
+  transition:border-color 0.2s,box-shadow 0.2s;
+}
+.username-box input:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(0,245,212,0.15);
+}
+.username-box input::placeholder{color:var(--muted);font-weight:300;}
+
+.btn-start{
+  width:100%;margin-top:16px;
+  padding:16px;
+  background:linear-gradient(135deg,var(--accent),#00c9ad);
+  border:none;border-radius:10px;
+  font-family:'Outfit',sans-serif;
+  font-size:16px;font-weight:700;
+  color:var(--bg);
+  cursor:pointer;
+  box-shadow:0 8px 32px rgba(0,245,212,0.3);
+  transition:all 0.2s;letter-spacing:0.05em;
+}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,245,212,0.5);}
+.btn-start:active{transform:translateY(0);}
+
+/* ── PROGRESS BAR ── */
+.progress-wrap{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  height:3px;background:var(--border);
+}
+.progress-fill{
+  height:100%;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  transition:width 0.5s cubic-bezier(0.4,0,0.2,1);
+  box-shadow:0 0 8px var(--accent);
+}
+.step-label{
+  position:fixed;top:16px;right:20px;z-index:100;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;color:var(--muted);letter-spacing:0.1em;
+}
+
+/* ── SURVEY SCREEN ── */
+#screen-survey{justify-content:flex-start;padding-top:80px;}
+
+.survey-card{
+  width:100%;max-width:620px;
+  animation:slideIn 0.4s cubic-bezier(0.34,1.2,0.64,1);
+}
+@keyframes slideIn{
+  from{opacity:0;transform:translateY(30px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+.q-number{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;letter-spacing:0.2em;color:var(--accent);
+  margin-bottom:12px;text-transform:uppercase;
+}
+.q-text{
+  font-size:clamp(20px,3vw,28px);
+  font-weight:700;line-height:1.3;
+  margin-bottom:32px;
+}
+
+/* OPTION BUTTONS */
+.options{display:flex;flex-direction:column;gap:12px;}
+.option{
+  display:flex;align-items:center;gap:16px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;padding:16px 20px;
+  cursor:pointer;
+  transition:all 0.2s;
+  text-align:left;width:100%;
+  font-family:'Outfit',sans-serif;
+  font-size:15px;color:var(--text);
+}
+.option:hover{
+  border-color:var(--accent);
+  background:rgba(0,245,212,0.06);
+  transform:translateX(4px);
+}
+.option.selected{
+  border-color:var(--accent);
+  background:rgba(0,245,212,0.12);
+  box-shadow:0 0 0 1px rgba(0,245,212,0.3);
+}
+.opt-key{
+  width:32px;height:32px;border-radius:8px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;font-weight:500;color:var(--muted);
+  flex-shrink:0;transition:all 0.2s;
+}
+.option.selected .opt-key{
+  background:var(--accent);color:var(--bg);border-color:var(--accent);
+}
+.opt-label{font-weight:500;}
+.opt-score{
+  margin-left:auto;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;color:var(--muted);
+  flex-shrink:0;
+}
+
+/* SLIDER QUESTION */
+.slider-wrap{margin-top:8px;}
+.range-slider{
+  width:100%;-webkit-appearance:none;appearance:none;
+  height:6px;border-radius:3px;outline:none;cursor:pointer;
+  background:linear-gradient(to right,var(--accent) 0%,var(--accent) 50%,var(--border) 50%,var(--border) 100%);
+}
+.range-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:22px;height:22px;border-radius:50%;
+  background:var(--accent);cursor:pointer;
+  box-shadow:0 0 0 4px rgba(0,245,212,0.2);
+  transition:box-shadow 0.2s;
+}
+.range-slider::-webkit-slider-thumb:hover{box-shadow:0 0 0 8px rgba(0,245,212,0.2);}
+.slider-labels{
+  display:flex;justify-content:space-between;
+  font-size:11px;color:var(--muted);margin-top:8px;
+  font-family:'JetBrains Mono',monospace;
+}
+.slider-val{
+  font-family:'JetBrains Mono',monospace;
+  font-size:42px;font-weight:700;
+  color:var(--accent);text-align:center;
+  margin:16px 0;line-height:1;
+}
+.slider-unit{font-size:14px;color:var(--muted);}
+
+.btn-next{
+  margin-top:28px;
+  padding:14px 36px;
+  background:var(--accent);
+  border:none;border-radius:10px;
+  font-family:'Outfit',sans-serif;
+  font-size:15px;font-weight:700;
+  color:var(--bg);cursor:pointer;
+  box-shadow:0 6px 24px rgba(0,245,212,0.3);
+  transition:all 0.2s;
+  opacity:0.4;pointer-events:none;
+}
+.btn-next.ready{opacity:1;pointer-events:all;}
+.btn-next.ready:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(0,245,212,0.5);}
+
+/* ── MEMORY TEST ── */
+#screen-memory{gap:0;}
+.memory-header{
+  text-align:center;margin-bottom:40px;
+}
+.memory-header h2{
+  font-size:clamp(28px,5vw,48px);font-weight:900;
+  margin-bottom:8px;
+}
+.memory-header p{font-size:15px;color:var(--muted);font-weight:300;}
+
+/* MEMORIZE PHASE */
+.memorize-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  max-width:500px;width:100%;
+  margin:0 auto 32px;
+}
+.mem-tile{
+  aspect-ratio:1;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;font-weight:900;
+  border:2px solid var(--border);
+  background:var(--surface);
+  transition:all 0.3s;
+  user-select:none;
+}
+.mem-tile.reveal{
+  border-color:var(--accent3);
+  background:rgba(255,230,0,0.1);
+  box-shadow:0 0 20px rgba(255,230,0,0.2);
+  animation:tileReveal 0.4s cubic-bezier(0.34,1.4,0.64,1) forwards;
+}
+@keyframes tileReveal{
+  from{transform:scale(0.8);opacity:0;}
+  to{transform:scale(1);opacity:1;}
+}
+.mem-tile.hidden-tile{color:transparent;background:var(--surface2);}
+
+.countdown-ring{
+  width:90px;height:90px;
+  position:relative;margin:0 auto 24px;
+}
+.countdown-ring svg{transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:var(--border);stroke-width:6;}
+.ring-fill{
+  fill:none;stroke:var(--accent);stroke-width:6;
+  stroke-dasharray:226;
+  stroke-dashoffset:0;
+  transition:stroke-dashoffset 1s linear;
+  stroke-linecap:round;
+}
+.ring-text{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;
+  font-size:22px;font-weight:500;color:var(--accent);
+}
+
+/* RECALL PHASE */
+.recall-prompt{
+  text-align:center;margin-bottom:28px;
+}
+.recall-prompt h3{font-size:22px;font-weight:700;margin-bottom:6px;}
+.recall-prompt p{font-size:14px;color:var(--muted);}
+
+.recall-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  max-width:500px;width:100%;
+  margin:0 auto 24px;
+}
+.recall-btn{
+  aspect-ratio:1;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;font-weight:900;
+  border:2px solid var(--border);
+  background:var(--surface);
+  cursor:pointer;
+  transition:all 0.2s;
+  font-family:'Outfit',sans-serif;
+}
+.recall-btn:hover{border-color:var(--accent2);background:rgba(245,0,184,0.08);}
+.recall-btn.correct{
+  border-color:var(--success);background:rgba(0,245,212,0.15);
+  animation:pop 0.3s cubic-bezier(0.34,1.6,0.64,1);
+}
+.recall-btn.wrong{
+  border-color:var(--danger);background:rgba(255,51,102,0.15);
+  animation:shake 0.3s ease;
+}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+.sequence-display{
+  display:flex;gap:8px;justify-content:center;
+  margin-bottom:20px;flex-wrap:wrap;
+}
+.seq-dot{
+  width:36px;height:36px;border-radius:8px;
+  background:var(--surface2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:700;
+  transition:all 0.3s;
+}
+.seq-dot.filled{
+  background:rgba(245,0,184,0.2);border-color:var(--accent2);
+}
+
+/* ── RESULTS ── */
+#screen-results{gap:24px;}
+.result-header{text-align:center;}
+.result-header .grade{
+  font-size:clamp(80px,15vw,140px);
+  font-weight:900;line-height:1;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.result-header h2{
+  font-size:24px;font-weight:700;margin-bottom:8px;
+}
+.result-header p{font-size:15px;color:var(--muted);}
+
+.score-breakdown{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:12px;width:100%;max-width:500px;
+}
+.score-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:20px;text-align:center;
+}
+.score-card .val{
+  font-family:'JetBrains Mono',monospace;
+  font-size:40px;font-weight:500;
+  line-height:1;margin-bottom:6px;
+}
+.score-card .lbl{
+  font-size:11px;letter-spacing:0.12em;
+  color:var(--muted);text-transform:uppercase;
+}
+.mem-color{color:var(--accent3);}
+.slp-color{color:var(--accent);}
+
+.insight-box{
+  width:100%;max-width:500px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:20px 24px;
+  font-size:15px;line-height:1.7;color:var(--muted);
+}
+.insight-box strong{color:var(--text);}
+
+.btn-submit{
+  padding:16px 48px;
+  background:linear-gradient(135deg,var(--accent2),#cc00a0);
+  border:none;border-radius:12px;
+  font-family:'Outfit',sans-serif;
+  font-size:17px;font-weight:700;
+  color:white;cursor:pointer;
+  box-shadow:0 8px 32px rgba(245,0,184,0.35);
+  transition:all 0.2s;
+}
+.btn-submit:hover{transform:translateY(-3px);box-shadow:0 14px 44px rgba(245,0,184,0.5);}
+.btn-submit:disabled{opacity:0.5;pointer-events:none;}
+
+.submit-status{
+  font-size:13px;color:var(--muted);font-family:'JetBrains Mono',monospace;
+  text-align:center;min-height:20px;
+}
+.submit-status.ok{color:var(--success);}
+.submit-status.err{color:var(--danger);}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:32px;left:50%;transform:translateX(-50%);
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:14px 24px;
+  font-size:14px;z-index:200;
+  box-shadow:0 8px 32px rgba(0,0,0,0.4);
+  animation:toastIn 0.3s ease;
+  display:none;
+}
+.toast.show{display:block;}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* PHASE LABEL */
+.phase-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:20px;padding:8px 16px;
+  font-size:12px;letter-spacing:0.1em;color:var(--muted);
+  margin-bottom:24px;text-transform:uppercase;
+}
+.phase-dot{width:6px;height:6px;border-radius:50%;}
+
+/* SEPARATOR */
+.sep{width:60px;height:2px;background:var(--border);margin:8px auto;}
+</style>
+</head>
+<body>
+
+<div class="stars"></div>
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+
+<div class="progress-wrap"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+<div class="step-label" id="step-label"></div>
+
+<!-- ══════════════════ WELCOME ══════════════════ -->
+<div class="screen active" id="screen-welcome">
+  <div class="logo"><div class="logo-bar"></div>NeuroCheck<div class="logo-bar"></div></div>
+  <h1>MIND &<br><span class="highlight">SLEEP</span><br>TRACKER</h1>
+  <p class="subtitle">A quick assessment of your memory sharpness and sleep quality. Takes about 3 minutes.</p>
+  <div class="username-box">
+    <label>Your username to get started</label>
+    <input type="text" id="username-input" placeholder="e.g. Ada Lovelace" maxlength="40" autocomplete="off"/>
+    <button class="btn-start" onclick="startApp()">BEGIN ASSESSMENT →</button>
+  </div>
+</div>
+
+<!-- ══════════════════ SURVEY ══════════════════ -->
+<div class="screen" id="screen-survey">
+  <div class="survey-card" id="survey-card">
+    <!-- injected by JS -->
+  </div>
+</div>
+
+<!-- ══════════════════ MEMORY TEST ══════════════════ -->
+<div class="screen" id="screen-memory">
+  <!-- injected by JS -->
+</div>
+
+<!-- ══════════════════ RESULTS ══════════════════ -->
+<div class="screen" id="screen-results">
+  <!-- injected by JS -->
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://127.0.0.1:5000';
+
+// ─── STATE ────────────────────────────────────────────────────────
+let username = '';
+let sleepScore = 0;
+let memoryScore = 0;
+let surveyAnswers = {};
+let currentQ = 0;
+let memPhase = 'memorize'; // memorize | recall
+let memSequence = [];
+let memUserSeq = [];
+let memCorrect = 0;
+let memTotal = 0;
+let countdownTimer = null;
+
+// ─── SURVEY QUESTIONS ─────────────────────────────────────────────
+const surveyQuestions = [
+  {
+    id:'hours',
+    type:'options',
+    text:'How many hours did you sleep last night?',
+    options:[
+      {label:'Less than 4 hours', score:10, key:'A'},
+      {label:'4–5 hours',          score:30, key:'B'},
+      {label:'6–7 hours',          score:70, key:'C'},
+      {label:'7–9 hours',          score:100,key:'D'},
+    ]
+  },
+  {
+    id:'quality',
+    type:'options',
+    text:'How would you rate the quality of your sleep?',
+    options:[
+      {label:'Very poor — lots of waking up', score:10, key:'A'},
+      {label:'Poor — restless',               score:30, key:'B'},
+      {label:'Fair — okay but not great',     score:60, key:'C'},
+      {label:'Good — mostly restful',         score:85, key:'D'},
+    ]
+  },
+  {
+    id:'wakeup',
+    type:'options',
+    text:'How did you feel when you woke up?',
+    options:[
+      {label:'Exhausted, barely functional',  score:5,  key:'A'},
+      {label:'Groggy, needed a lot of time',  score:35, key:'B'},
+      {label:'Okay, took some time to wake',  score:65, key:'C'},
+      {label:'Refreshed and alert',           score:100,key:'D'},
+    ]
+  },
+  {
+    id:'interruptions',
+    type:'options',
+    text:'How many times did you wake up during the night?',
+    options:[
+      {label:'5+ times',   score:10, key:'A'},
+      {label:'3–4 times',  score:40, key:'B'},
+      {label:'1–2 times',  score:75, key:'C'},
+      {label:'Not at all', score:100,key:'D'},
+    ]
+  },
+  {
+    id:'hours_slider',
+    type:'slider',
+    text:'On average, how many hours do you sleep per night?',
+    min:3, max:12, default:7,
+    labels:['3h','12h'],
+    scoreFunc: v => Math.round(Math.min(100, Math.max(0, (v<=6 ? v*10 : v<=9 ? 60+(v-6)*10 : 100-(v-9)*15))))
+  }
+];
+
+const TOTAL_STEPS = surveyQuestions.length + 3; // survey + memorize + recall + results
+
+// ─── NAVIGATION ───────────────────────────────────────────────────
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function setProgress(step){
+  const pct = Math.round((step/TOTAL_STEPS)*100);
+  document.getElementById('progress').style.width = pct+'%';
+  document.getElementById('step-label').textContent = step+' / '+TOTAL_STEPS;
+}
+
+// ─── START ────────────────────────────────────────────────────────
+function startApp(){
+  username = document.getElementById('username-input').value.trim();
+  if(!username){ showToast('Please enter your name'); return; }
+  showScreen('screen-survey');
+  setProgress(1);
+  renderQuestion(0);
+}
+
+// ─── SURVEY ───────────────────────────────────────────────────────
+function renderQuestion(index){
+  currentQ = index;
+  const q = surveyQuestions[index];
+  const card = document.getElementById('survey-card');
+  setProgress(index+1);
+
+  let html = `
+    <div class="q-number">Question ${index+1} of ${surveyQuestions.length} — Sleep Survey</div>
+    <div class="q-text">${q.text}</div>
+  `;
+
+  if(q.type==='options'){
+    html += `<div class="options">`;
+    q.options.forEach((o,i)=>{
+      html += `
+        <button class="option" onclick="selectOption(${index},'${o.key}',${o.score},this)">
+          <div class="opt-key">${o.key}</div>
+          <div class="opt-label">${o.label}</div>
+          <div class="opt-score">+${o.score}pts</div>
+        </button>`;
+    });
+    html += `</div>`;
+  } else if(q.type==='slider'){
+    html += `
+      <div class="slider-wrap">
+        <div class="slider-val"><span id="slider-num">${q.default}</span> <span class="slider-unit">hrs</span></div>
+        <input type="range" class="range-slider" id="slider-input"
+          min="${q.min}" max="${q.max}" value="${q.default}"
+          oninput="updateSlider(this.value,${index})">
+        <div class="slider-labels"><span>${q.labels[0]}</span><span>${q.labels[1]}</span></div>
+      </div>`;
+  }
+
+  html += `<button class="btn-next ${q.type==='slider'?'ready':''}" id="btn-next" onclick="nextQuestion()">
+    ${index===surveyQuestions.length-1?'Start Memory Test →':'Next →'}
+  </button>`;
+
+  card.innerHTML = html;
+  card.style.animation='none';
+  requestAnimationFrame(()=>{card.style.animation='';card.className='survey-card';});
+
+  // pre-select if re-visiting
+  if(surveyAnswers[q.id]!==undefined && q.type==='options'){
+    document.querySelectorAll('.option').forEach(opt=>{
+      if(opt.querySelector('.opt-key').textContent===surveyAnswers[q.id].key)
+        opt.classList.add('selected');
+    });
+    document.getElementById('btn-next').classList.add('ready');
+  }
+  if(q.type==='slider'){
+    surveyAnswers[q.id]={score:q.scoreFunc(q.default),val:q.default};
+    updateSlider(q.default,index);
+  }
+}
+
+function selectOption(qIdx, key, score, el){
+  document.querySelectorAll('.option').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  surveyAnswers[surveyQuestions[qIdx].id]={key,score};
+  document.getElementById('btn-next').classList.add('ready');
+}
+
+function updateSlider(val,qIdx){
+  document.getElementById('slider-num').textContent=val;
+  const q=surveyQuestions[qIdx];
+  const score=q.scoreFunc(parseInt(val));
+  surveyAnswers[q.id]={score,val:parseInt(val)};
+  // update gradient
+  const input=document.getElementById('slider-input');
+  const pct=((val-q.min)/(q.max-q.min))*100;
+  input.style.background=`linear-gradient(to right,var(--accent) 0%,var(--accent) ${pct}%,var(--border) ${pct}%,var(--border) 100%)`;
+}
+
+function nextQuestion(){
+  if(currentQ<surveyQuestions.length-1){
+    renderQuestion(currentQ+1);
+  } else {
+    // compute sleep score
+    const scores=Object.values(surveyAnswers).map(a=>a.score);
+    sleepScore=Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+    startMemoryTest();
+  }
+}
+
+// ─── MEMORY TEST ──────────────────────────────────────────────────
+const EMOJIS=['🔥','⚡','🌊','🎯','💎','🚀','🌙','🎲','🦋','🎸','🍀','⭐'];
+const MEM_ROUNDS=[
+  {count:4, time:4},
+  {count:6, time:5},
+  {count:8, time:6},
+];
+let memRound=0;
+let memRoundScores=[];
+
+function startMemoryTest(){
+  showScreen('screen-memory');
+  memRound=0;memRoundScores=[];memCorrect=0;memTotal=0;
+  runMemRound();
+}
+
+function runMemRound(){
+  const cfg=MEM_ROUNDS[memRound];
+  const pool=[...EMOJIS].sort(()=>Math.random()-0.5);
+  memSequence=pool.slice(0,cfg.count);
+  memUserSeq=[];
+  setProgress(surveyQuestions.length+1+memRound);
+  renderMemorizePhase(cfg);
+}
+
+function renderMemorizePhase(cfg){
+  const mem=document.getElementById('screen-memory');
+  const tiles=memSequence.map((e,i)=>`
+    <div class="mem-tile hidden-tile" id="tile-${i}" style="animation-delay:${i*120}ms">${e}</div>
+  `).join('');
+
+  mem.innerHTML=`
+    <div class="phase-badge">
+      <div class="phase-dot" style="background:var(--accent3)"></div>
+      Round ${memRound+1} of ${MEM_ROUNDS.length} — Memorize
+    </div>
+    <div class="memory-header">
+      <h2>Memorize the sequence</h2>
+      <p>Study these ${cfg.count} symbols carefully</p>
+    </div>
+    <div class="countdown-ring">
+      <svg width="90" height="90" viewBox="0 0 90 90">
+        <circle class="ring-bg" cx="45" cy="45" r="36"/>
+        <circle class="ring-fill" id="ring-fill" cx="45" cy="45" r="36"/>
+      </svg>
+      <div class="ring-text" id="ring-num">${cfg.time}</div>
+    </div>
+    <div class="memorize-grid">${tiles}</div>
+  `;
+
+  // reveal tiles one by one
+  memSequence.forEach((_,i)=>{
+    setTimeout(()=>{
+      const t=document.getElementById(`tile-${i}`);
+      if(t){t.classList.remove('hidden-tile');t.classList.add('reveal');}
+    },i*150+200);
+  });
+
+  // countdown
+  let t=cfg.time;
+  const ring=()=>document.getElementById('ring-fill');
+  const num=()=>document.getElementById('ring-num');
+  const circumference=226;
+  if(countdownTimer) clearInterval(countdownTimer);
+  countdownTimer=setInterval(()=>{
+    t--;
+    if(ring()) ring().style.strokeDashoffset=circumference*(1-(t/cfg.time));
+    if(num()) num().textContent=t;
+    if(t<=0){
+      clearInterval(countdownTimer);
+      renderRecallPhase();
+    }
+  },1000);
+}
+
+function renderRecallPhase(){
+  setProgress(surveyQuestions.length+2+memRound);
+  const mem=document.getElementById('screen-memory');
+  const cfg=MEM_ROUNDS[memRound];
+
+  // shuffle for buttons
+  const shuffled=[...memSequence].sort(()=>Math.random()-0.5);
+  // add decoys
+  const decoys=EMOJIS.filter(e=>!memSequence.includes(e))
+    .sort(()=>Math.random()-0.5).slice(0,cfg.count);
+  const allOptions=[...shuffled,...decoys].sort(()=>Math.random()-0.5).slice(0,cfg.count*2);
+
+  const dots=memSequence.map((_,i)=>
+    `<div class="seq-dot" id="dot-${i}"></div>`
+  ).join('');
+
+  const buttons=allOptions.map(e=>
+    `<button class="recall-btn" onclick="recallSelect('${e}',this)">${e}</button>`
+  ).join('');
+
+  mem.innerHTML=`
+    <div class="phase-badge">
+      <div class="phase-dot" style="background:var(--accent2)"></div>
+      Round ${memRound+1} — Recall
+    </div>
+    <div class="recall-prompt">
+      <h3>Tap the symbols in order</h3>
+      <p>Recreate the sequence from memory</p>
+    </div>
+    <div class="sequence-display">${dots}</div>
+    <div class="recall-grid">${buttons}</div>
+  `;
+}
+
+function recallSelect(emoji, btn){
+  const expected=memSequence[memUserSeq.length];
+  memUserSeq.push(emoji);
+  const dotIdx=memUserSeq.length-1;
+  const dot=document.getElementById(`dot-${dotIdx}`);
+
+  if(emoji===expected){
+    btn.classList.add('correct');
+    if(dot){dot.textContent=emoji;dot.classList.add('filled');}
+    memCorrect++;
+    btn.disabled=true;
+
+    if(memUserSeq.length===memSequence.length){
+      memTotal+=memSequence.length;
+      const roundScore=Math.round((memCorrect/memSequence.length)*100);
+      memRoundScores.push(roundScore);
+      memRound++;
+      if(memRound<MEM_ROUNDS.length){
+        memCorrect=0;
+        setTimeout(()=>runMemRound(),800);
+      } else {
+        setTimeout(()=>showResults(),800);
+      }
+    }
+  } else {
+    btn.classList.add('wrong');
+    memTotal+=memSequence.length;
+    const roundScore=Math.round((memCorrect/memSequence.length)*100);
+    memRoundScores.push(roundScore);
+    memRound++;
+    if(memRound<MEM_ROUNDS.length){
+      memCorrect=0;
+      setTimeout(()=>runMemRound(),900);
+    } else {
+      setTimeout(()=>showResults(),900);
+    }
+  }
+}
+
+// ─── RESULTS ──────────────────────────────────────────────────────
+function showResults(){
+  if(memRoundScores.length>0){
+    memoryScore=Math.round(memRoundScores.reduce((a,b)=>a+b,0)/memRoundScores.length);
+  } else { memoryScore=0; }
+
+  const total=Math.round((memoryScore+sleepScore)/2);
+  const grade=total>=90?'S':total>=80?'A':total>=65?'B':total>=50?'C':'D';
+  const gradeMsg={
+    S:'Outstanding. Your mind is sharp and your rest is deep.',
+    A:'Excellent performance across memory and sleep.',
+    B:'Good results. A bit more sleep could sharpen you further.',
+    C:'Fair. Prioritize sleep consistency to boost cognition.',
+    D:'Your body and mind need more rest. Take care of yourself.'
+  }[grade];
+
+  const memInsight=memoryScore>=80?'Sharp recall and strong working memory.':
+    memoryScore>=60?'Decent memory, some lapses under pressure.':
+    'Memory performance was below average — rest helps consolidate memory.';
+
+  const slpInsight=sleepScore>=80?'Your sleep habits look healthy and restorative.':
+    sleepScore>=55?'Sleep quality is moderate — some room to improve.':
+    'Your sleep is significantly disrupted. This directly impacts cognition.';
+
+  setProgress(TOTAL_STEPS);
+  showScreen('screen-results');
+
+  document.getElementById('screen-results').innerHTML=`
+    <div class="result-header">
+      <div class="grade">${grade}</div>
+      <h2>Well done, ${username}!</h2>
+      <p>${gradeMsg}</p>
+    </div>
+    <div class="sep"></div>
+    <div class="score-breakdown">
+      <div class="score-card">
+        <div class="val mem-color">${memoryScore}</div>
+        <div class="lbl">Memory Score</div>
+      </div>
+      <div class="score-card">
+        <div class="val slp-color">${sleepScore}</div>
+        <div class="lbl">Sleep Score</div>
+      </div>
+    </div>
+    <div class="insight-box">
+      <strong>Memory:</strong> ${memInsight}<br><br>
+      <strong>Sleep:</strong> ${slpInsight}
+    </div>
+    <button class="btn-submit" id="btn-submit" onclick="submitToAPI()">
+      SAVE TO DATABASE →
+    </button>
+    <div class="submit-status" id="submit-status"></div>
+  `;
+}
+
+// ─── API SUBMIT ───────────────────────────────────────────────────
+async function submitToAPI(){
+  const btn=document.getElementById('btn-submit');
+  const status=document.getElementById('submit-status');
+  btn.disabled=true;
+  btn.textContent='Saving...';
+  status.textContent='';status.className='submit-status';
+
+  const payload={
+    name: username,
+    memory_score: memoryScore,
+    sleep_score: sleepScore
+  };
+
+  console.log('Submitting:', JSON.stringify(payload));
+
+  try{
+    const res=await fetch(`${API}/create_contact`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    const data=await res.json();
+    if(res.ok){
+      status.textContent='✓ Saved successfully to database!';
+      status.className='submit-status ok';
+      btn.textContent='SAVED ✓';
+    } else {
+      status.textContent='✗ '+data.message;
+      status.className='submit-status err';
+      btn.textContent='RETRY →';
+      btn.disabled=false;
+    }
+  } catch(e){
+    status.textContent='✗ Could not reach server. Is Flask running?';
+    status.className='submit-status err';
+    btn.textContent='RETRY →';
+    btn.disabled=false;
+  }
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ─── KEYBOARD SHORTCUT (enter to start) ──────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter' && document.getElementById('screen-welcome').classList.contains('active')){
+    startApp();
+  }
+});
+</script>
+</body>
+</html>
